@@ -1,0 +1,111 @@
+project:
+  name: duksan_lstm_ae
+
+data:
+  raw_path: data/raw/duksanind_VW_EQUIPMENT_RAW_DATA_1009.csv
+  processed_path: data/processed/duksanind_VW_EQUIPMENT_PREPROCESSED.csv
+  preprocessing_report_path: data/processed/preprocessing_report.json
+  segment_summary_path: data/processed/segment_summary.csv
+  time_col: GA_DT
+  segment_col: SEGMENT_ID
+  status_col: STATUS
+  status_original_col: STATUS_ORIGINAL
+  source_index_col: SOURCE_ROW_INDEX
+  frequency: 1min
+  duplicate_policy: mean
+  input_is_scaled: false
+  # 과거 전처리 파일이 전체 데이터 scaler로 변환된 경우에만 true로 바꾸어 사용
+  preprocessing_scaler_path: data/processed/standard_scaler.pkl
+  feature_cols:
+    - CURRENT1
+    - VOLTAGE
+    - TEMP_CUR
+    - ANALOGUE
+    - GROUND
+
+missing:
+  interpolation_method: time
+  # 단위는 시간이 아니라 기준 수집 주기의 연속 행(step) 개수
+  max_interpolation_gap_steps: 5
+  max_segment_gap_steps: 1
+  add_interpolation_mask: true
+  interpolation_mask_prefix: INTERPOLATED_
+  gap_bucket_steps:
+    - 1
+    - 5
+    - 30
+    - 60
+    - 360
+    - 1440
+
+status:
+  use_for_training_filter: false
+  normal_values: []
+  anomaly_values: []
+  exclude_unknown: false
+  # last, any_anomaly, majority, all 중 선택
+  window_label_mode: last
+
+split:
+  train_ratio: 0.70
+  validation_ratio: 0.15
+  test_ratio: 0.15
+  # 단위는 기준 수집 주기의 행(step) 개수
+  purge_gap_steps: 60
+
+scaling:
+  # standard, robust, minmax, none 중 선택
+  method: robust
+
+window:
+  sequence_length: 60
+  stride: 1
+  require_complete_window: true
+  max_interpolation_ratio: 1.0
+  max_train_windows: 100000
+  max_validation_windows: 30000
+  max_test_windows: 100000
+
+model:
+  hidden_size: 64
+  latent_size: 16
+  num_layers: 2
+  dropout: 0.20
+
+training:
+  seed: 42
+  batch_size: 128
+  epochs: 30
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  patience: 5
+  gradient_clip_norm: 1.0
+  num_workers: 0
+  device: auto
+
+threshold:
+  # train_percentile, validation_percentile, mean_std 중 선택
+  method: validation_percentile
+  percentile: 99.5
+  mean_std_k: 3.0
+  mean_std_source: validation
+  score_aggregation: window_mean
+
+artifacts:
+  run_dir: artifacts/lstm_ae
+  model_file: model.pt
+  scaler_file: train_scaler.pkl
+  history_file: training_history.csv
+  threshold_file: threshold.json
+  metrics_file: metrics.json
+  evaluation_file: evaluation_windows.csv
+  config_snapshot_file: settings_used.yaml
+
+inference:
+  batch_size: 256
+  output_path: outputs/anomaly_predictions.csv
+
+streamlit:
+  host: 0.0.0.0
+  port: 8501
+  max_timeline_points: 15000

@@ -1,0 +1,12 @@
+name: duksan-lstm-ae
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip>=24
+  - pip:
+      # 프로젝트에 필요한 패키지를 현재 Conda 환경 안에만 설치
+      - -r requirements.txt
+      - -e .
